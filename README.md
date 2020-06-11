@@ -6,7 +6,8 @@ Park programming language
 3. ```cd park-lang```
 4. ```./park examples/hello.prk```
 
-## Hello World
+## Hello World 
+```./park examples/hello.prk```
 ```javascript
 function main()
 {
@@ -15,6 +16,7 @@ function main()
 ```
 
 ## Basics
+```./park examples/basics.prk```
 ```javascript
 function main()
 {
@@ -32,6 +34,7 @@ function main()
 ```
 
 ## Functions
+```./park examples/functions.prk```
 ```javascript
 function sum(a, b) /* defining a function */
 {
