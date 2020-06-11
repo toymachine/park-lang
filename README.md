@@ -50,3 +50,26 @@ function main() /* main entry function */
     })
 }
 ```
+
+## Loops and Recursion
+There is currently direct support for loops (for, do, while etc) in the language.
+The ```recur``` statement can be used to make tail recursive calls to create
+loops
+```./park examples/loops.prk```
+```
+function loop(n)
+{
+    if(n == 0) {
+        return 0
+    }
+    else {
+        print(n)
+        recurs (n - 1) /* tail recursive call to current function */
+    }
+}
+
+function main()
+{
+    loop(10) 
+}
+```
