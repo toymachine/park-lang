@@ -1,0 +1,1608 @@
+/* convert builtins to set TODO maybe just have __builtins__ be set already? */
+const builtins = makeset(__builtins__)
+
+/* convert builtins to set */
+/*
+let builtins = reduce({}, __builtins__, (acc, name) => {
+    return assoc(acc, name, true)
+})
+*/
+
+function token(state) {
+    return first(state[$lexer])['token']
+}
+
+function value(state) {
+    return first(state[$lexer])['value']
+}
+
+function line(state) {
+    return first(state[$lexer])['line']
+}
+
+function result(state) {
+    return state[$result]
+}
+
+function stmts(state) {
+    return state[$result]['stmts']
+}
+
+function parms(state) {
+    return state[$result]['parms']
+}
+
+function imports(state) {
+    return state[$result]['imports']
+}
+
+function info(state) {
+    if(token(state) == 'identifier') {
+        return token(state) + " '" + value(state) + "'"
+    }
+    else {
+        return token(state)
+    }
+}
+
+function success(state, result) {
+    return assoc(state, $result, result)
+}
+
+function failure(state, msg, line) {
+    return merge(state, {"error": msg, "line": line})
+}
+
+function succeeded(state) {
+    return !("error" in state)
+}
+
+function accept(state) {
+    return assoc(state, $lexer, next(state[$lexer]))
+}
+
+function expect(state, t) {
+    if(token(state) == t) {
+        return accept(state)
+    }
+    else {
+        return failure(state, "expected: '" + t + "', got: " + info(state), line(state))
+    }
+}
+
+function dict_literal_item(state)
+{
+    /*print("dict_literal_item", state, token(state))*/
+    let state0 = expression(state)
+    if(succeeded(state0)) {
+        let state1 = expect(state0, 'colon')
+        if(succeeded(state1)) {
+            let state2 = expression(state1)
+            if(succeeded(state2)) {
+                return success(state2, [result(state0), result(state2)])
+            }
+            else {
+                return state2
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function dict_literal_items(state, first, items)
+{
+    /*print("dict_literal_items", state, token(state), first)*/
+    if(token(state) == 'rbrace') {
+        return success(state, items)
+    }
+    else {
+        if(first) {
+            let state0 = dict_literal_item(state)
+            if(succeeded(state0)) {
+                recurs (state0, false, conj(items, result(state0)))
+            }
+            else {
+                return state0
+            }
+        }
+        else {
+            let state0 = expect(state, 'comma')
+            if(succeeded(state0)) {
+                let state1 = dict_literal_item(state0)
+                if(succeeded(state1)) {
+                    recurs (state1, false, conj(items, result(state1)))
+                }
+                else {
+                    return state1
+                }
+            }
+            else {
+                return state0
+            }
+        }
+    }
+}
+
+function dict_literal(state)
+{
+    /*print("dict_literal", state, token(state))*/
+    let state0 = expect(state, 'lbrace')
+    if(succeeded(state0)) {
+        let state1 = dict_literal_items(state0, true, [])
+        if(succeeded(state1)) {
+            let state2 = expect(state1, 'rbrace')
+            if(succeeded(state2)) {
+                return success(state2, {'type': 'dict_literal', 'items': result(state1), 'line': line(state0)})
+            }
+            else {
+                return state2
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function vector_literal_items(state, first, items)
+{
+    /*print("dict_literal_items", state, token(state), first)*/
+    if(token(state) == 'rbrack') {
+        return success(state, items)
+    }
+    else {
+        if(first) {
+            let state0 = expression(state)
+            if(succeeded(state0)) {
+                recurs (state0, false, conj(items, result(state0)))
+            }
+            else {
+                return state0
+            }
+        }
+        else {
+            let state0 = expect(state, 'comma')
+            if(succeeded(state0)) {
+                let state1 = expression(state0)
+                if(succeeded(state1)) {
+                    recurs (state1, false, conj(items, result(state1)))
+                }
+                else {
+                    return state1
+                }
+            }
+            else {
+                return state0
+            }
+        }
+    }
+}
+
+
+function vector_literal(state)
+{
+    /*print("dict_literal", state, token(state))*/
+    let state0 = expect(state, 'lbrack')
+    if(succeeded(state0)) {
+        let state1 = vector_literal_items(state0, true, [])
+        if(succeeded(state1)) {
+            let state2 = expect(state1, 'rbrack')
+            if(succeeded(state2)) {
+                return success(state2, {'type': 'vector_literal', 'items': result(state1)})
+            }
+            else {
+                return state2
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function function_literal(state)
+{
+    let state0 = expect(state, 'lparen')
+    if(succeeded(state0)) {
+        let state1 = parameter_list(state0, true, [])
+        if(succeeded(state1)) {
+            let state2 = expect(state1, 'rparen')
+            if(succeeded(state2)) {
+                let state3 = expect(state2, 'equals_greaterthan')
+                if(succeeded(state3)) {
+                    let state4 = block(state3)
+                    if(succeeded(state4)) {
+                        return success(state4, {'type': 'function_literal', 'stmts': stmts(state4), 'parms': parms(state1)})
+                    }
+                    else {
+                        return state4
+                    }
+                }
+                else {
+                    return state3
+                }
+            }
+            else {
+                return state2
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function parenthesized_expression(state)
+{
+    /*print("parenthesized_expression", state, token(state))*/
+    let state0 = expect(state, 'lparen')
+    if(succeeded(state0)) {
+        let state1 = expression(state0)
+        if(succeeded(state1)) {
+            let state2 = expect(state1, 'rparen')
+            if(succeeded(state2)) {
+                return success(state2, result(state2))
+            }
+            else {
+                return state2
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function term(state) {
+    /*print("term", state, token(state))*/
+    let t = token(state)
+    if(t == 'identifier') {
+        return success(accept(state), {'type': 'identifier', 'value': value(state), 'line': line(state)})
+    }
+    else if(t == 'keyword') {
+        return success(accept(state), {'type': 'keyword_literal', 'value': value(state), 'line': line(state)})
+    }
+    else if(t == 'integer_literal') {
+        return success(accept(state), {'type': 'integer_literal', 'value': value(state)})
+    }
+    else if(t == 'string_literal') {
+        return success(accept(state), {'type': 'string_literal', 'value': value(state)})
+    }
+    else if(t == 'true' || t == 'false') {
+        return success(accept(state), {'type': 'boolean_literal', 'value': t})
+    }
+    else if(t == 'lbrack') {
+        return vector_literal(state)
+    }
+    else if(t == 'lbrace') {
+        return dict_literal(state)
+    }
+    else if(t == 'lparen') {
+        /* TODO parse prefix first, then check if => */
+        /* parentized expression or function literal */
+        let state0 = function_literal(state)
+        if(succeeded(state0)) {
+            return state0
+        }
+        else {
+            /* backtrack, try parse parenthesized_expression */
+            let state1 = parenthesized_expression(state)
+            if(succeeded(state1)) {
+                return state1
+            }
+            else {
+                return state1
+            }
+        }
+    }
+    else {
+        return failure(state, "expected 'term' but found: " + info(state), line(state))
+    }
+}
+
+/* token -> operator */
+const operators = {'double_equals':     {'value': 'equals', 'prec': 9, 'assoc': 'left', 'type': 'binary_operator'},
+                 'not_equals':        {'value': 'not_equals', 'prec': 9, 'assoc': 'left', 'type': 'binary_operator'},
+                 'plus':              {'value': 'add', 'prec': 10, 'assoc': 'left', 'type': 'binary_operator'},
+                 'minus':             {'value': 'subtract', 'prec': 10, 'assoc': 'left', 'type': 'binary_operator'},
+                 'star':              {'value': 'multiply', 'prec': 12, 'assoc': 'left', 'type': 'binary_operator'},
+                 'lparen':            {'value': 'call', 'prec': 15, 'assoc': 'left', 'type': 'binary_operator'},
+                 'lbrack':            {'value': 'subscript', 'prec': 15, 'assoc': 'left', 'type': 'binary_operator'},
+                 'lessthan':          {'value': 'lt', 'prec': 13, 'assoc': 'left', 'type': 'binary_operator'},
+                 'greaterthan':       {'value': 'gt', 'prec': 13, 'assoc': 'left', 'type': 'binary_operator'},
+                 'percent':           {'value': 'mod', 'prec': 12,  'assoc': 'left', 'type': 'binary_operator'},
+                 'exclamation_mark':  {'value': 'not', 'prec': 14, 'assoc': 'right', 'type': 'unary_operator', 'prefix': true},
+                 'in':                {'value': 'contains', 'prec': 11, 'assoc': 'left', 'type': 'binary_operator'},
+                 'double_pipe':       {'value': 'or_else', 'prec': 4, 'assoc': 'left', 'type': 'binary_operator'},
+                 'double_amp':        {'value': 'and_then', 'prec': 4, 'assoc': 'left', 'type': 'binary_operator'}}
+
+function operator(state) {
+    /*print("operator", state, token(state))*/
+    let t = token(state)
+    if(t in operators) {
+        return success(accept(state), operators[t])
+    }
+    else {
+        return failure(state, "expected 'operator' but found: " + info(state), line(state))
+    }
+}
+
+function argument_list(state, first, items)
+{
+    /*print("argument_list", state, token(state), first, items)*/
+    if(token(state) == 'rparen') {
+        return success(accept(state), items)
+    }
+    else {
+        if(first) {
+            let state0 = expression(state)
+            if(succeeded(state0)) {
+                recurs (state0, false, conj(items, result(state0)))
+            }
+            else {
+                return state0
+            }
+        }
+        else {
+            let state0 = expect(state, 'comma')
+            if(succeeded(state0)) {
+                let state1 = expression(state0)
+                if(succeeded(state1)) {
+                    recurs (state1, false, conj(items, result(state1)))
+                }
+                else {
+                    return state1
+                }
+            }
+            else {
+                return state0
+            }
+        }
+    }
+}
+
+
+function expression(state) {
+    /*print("expression", state, token(state))*/
+
+    /* using _expression as first argument to allow for mutually recursive
+    _expression and _step */
+    function _step(_expression, left_state, min_prec)
+    {
+        /* parse operator regardless if left_state was error, as happens with unary operator */
+        let operator_state = operator({$lexer: left_state[$lexer]})
+
+        if(!succeeded(operator_state)) {
+            return left_state
+        }
+
+        let operator_result = result(operator_state)
+        let prec = operator_result['prec']
+        let _assoc = operator_result['assoc']
+        let is_prefix_operator = 'prefix' in operator_result
+
+        if(prec < min_prec) {
+            return left_state
+        }
+
+        let next_min_prec = (() => {
+            if(_assoc == 'left') {
+                return prec + 1
+            } else {
+                return prec
+            }
+        })()
+
+        let operator_value = result(operator_state)['value']
+
+        if(operator_value == 'call') {
+            let right_state = argument_list(operator_state, true, [])
+            if(succeeded(right_state)) {
+                if(token(right_state) == 'qmark') {
+                    let right_state0 = accept(right_state)
+                    recurs (_expression,
+                        success(right_state0, {'type': 'call', 'expr': result(left_state), 'args': result(right_state), 'line': line(operator_state), 'data': {'qmark': true}}),
+                        min_prec)
+                }
+                else {
+                    recurs (_expression,
+                        success(right_state, {'type': 'call', 'expr': result(left_state), 'args': result(right_state), 'line': line(operator_state)}),
+                        min_prec)
+                }
+            }
+            else {
+                return failure(right_state, "expected arguments, but found: " + info(right_state), line(right_state))
+            }
+        }
+        else if(operator_value == 'subscript') {
+            let index_expr_state = expression(operator_state)
+            if(succeeded(index_expr_state)) {
+                let right_state = expect(index_expr_state, 'rbrack')
+                if(succeeded(right_state)) {
+                    recurs (_expression,
+                        success(right_state, {'type': 'call',
+                                              'expr': {'type': 'identifier', 'value': 'get', 'line': 0},
+                                              'args': [result(left_state), result(index_expr_state)], 'line': line(operator_state)}),
+                        min_prec)
+                }
+                else {
+                    return failure(right_state, "expected right bracket after index expression: " + info(right_state), line(right_state))
+                }
+            }
+            else {
+                return failure(index_expr_state, "expected index expression, but found: " + info(index_expr_state), line(index_expr_state))
+            }
+        }
+        else {
+            let right_state = _expression(operator_state, next_min_prec)
+            if(is_prefix_operator) {
+                recurs (_expression,
+                       success(right_state,
+                            assoc(
+                                result(operator_state), 'expr', result(right_state))),
+                        min_prec)
+            }
+            else {
+                recurs (_expression,
+                       success(right_state,
+                        assoc(
+                            assoc(
+                                result(operator_state), 'left', result(left_state)),
+                                                        'right', result(right_state))),
+                        min_prec)
+            }
+        }
+    }
+
+    function _expression(state, min_prec) {
+        return _step(_expression, term(state), min_prec)
+    }
+
+    return _expression(state, 1)
+}
+
+function block(state) {
+    /*print("block", state, token(state))*/
+    let state0 = expect(state, 'lbrace')
+    if(succeeded(state0)) {
+        let state1 = statement_list(state0, 'rbrace', [])
+        if(succeeded(state1)) {
+            return success(state1, {'type': 'block', 'stmts': stmts(state1)})
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+
+function parameter_list(state, first, parms)
+{
+    /*print("parameter_list", state, token(state), first)*/
+    if(token(state) == 'rparen') {
+        return success(state, {'type': 'parameter_list', 'parms': parms})
+    }
+    else {
+        if(first) {
+            let state0 = expect(state, 'identifier')
+            if(succeeded(state0)) {
+                recurs (state0, false, conj(parms, {'type': 'identifier', 'value': value(state)}))
+            }
+            else {
+                return state0
+            }
+        }
+        else {
+            let state0 = expect(state, 'comma')
+            if(succeeded(state0)) {
+                let state1 = expect(state0, 'identifier')
+                if(succeeded(state1)) {
+                    recurs (state1, false, conj(parms, {'type': 'identifier', 'value': value(state0)}))
+                }
+                else {
+                    return state1
+                }
+            }
+            else {
+                return state0
+            }
+        }
+    }
+}
+
+function import_list(state, first, imports)
+{
+    if(token(state) == 'rbrace') {
+        return success(state, {'type': 'import_list', 'imports': imports})
+    }
+    else {
+        if(first) {
+            let state0 = expect(state, 'identifier')
+            if(succeeded(state0)) {
+                recurs (state0, false, conj(imports, {'type': 'identifier', 'value': value(state)}))
+            }
+            else {
+                return state0
+            }
+        }
+        else {
+            let state0 = expect(state, 'comma')
+            if(succeeded(state0)) {
+                let state1 = expect(state0, 'identifier')
+                if(succeeded(state1)) {
+                    recurs (state1, false, conj(imports, {'type': 'identifier', 'value': value(state0)}))
+                }
+                else {
+                    return state1
+                }
+            }
+            else {
+                return state0
+            }
+        }
+    }
+}
+
+function import_statement(state)
+{
+    /*print("function_statement", state, token(state))*/
+    let state0 = expect(state, 'import')
+    if(succeeded(state0)) {
+        let state1 = expect(state0, 'lbrace')
+        if(succeeded(state1)) {
+            let state2 = import_list(state1, true, [])
+            if(succeeded(state2)) {
+                let state3 = expect(state2, 'rbrace')
+                if(succeeded(state3)) {
+                    let state4 = expect(state3, 'from')
+                    if(succeeded(state4)) {
+                        let state5 = expect(state4, 'string_literal')
+                        if(succeeded(state5)) {
+                            return success(state5, {'type': 'import_statement', 'from': value(state4), 'imports': imports(state2)})
+                        }
+                        else {
+                            return state5
+                        }
+                    }
+                    else {
+                        return state4
+                    }
+                }
+                else {
+                    return state3
+                }
+            }
+            else {
+                return state2
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function function_statement(state)
+{
+    /*print("function_statement", state, token(state))*/
+    let state0 = expect(state, 'function')
+    if(succeeded(state0)) {
+        let state1 = expect(state0, 'identifier')
+        if(succeeded(state1)) {
+            let state2 = expect(state1, 'lparen')
+            if(succeeded(state2)) {
+                let state3 = parameter_list(state2, true, [])
+                if(succeeded(state3)) {
+                    let state4 = expect(state3, 'rparen')
+                    if(succeeded(state4)) {
+                        let state5 = block(state4)
+                        if(succeeded(state5)) {
+                            return success(state5, {'type': 'function_statement', 'name': value(state0), 'stmts': stmts(state5), 'parms': parms(state3)})
+                        }
+                        else {
+                            return state5
+                        }
+                    }
+                    else {
+                        return state4
+                    }
+                }
+                else {
+                    return state3
+                }
+            }
+            else {
+                return state2
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function if_statement(state) {
+    /*print("if_statement", state, token(state))*/
+    let state0 = expect(state, 'if')
+    if(succeeded(state0)) {
+        let state1 = expect(state0, 'lparen')
+        if(succeeded(state1)) {
+            let state15 = expression(state1)
+            if(succeeded(state15)) {
+                let state2 = expect(state15, 'rparen')
+                if(succeeded(state2)) {
+                    let state3 = block(state2)
+                    if(succeeded(state3)) {
+                        if(token(state3) == 'else') {
+                            let state4 = accept(state3)
+                            if(token(state4) == 'if') {
+                                /* else if */
+                                let state5 = if_statement(state4)
+                                if(succeeded(state5)) {
+                                   return success(state5, {'type': 'if_else_statement', 'expr': result(state15), 'if_stmts': stmts(state3), 'else_stmts': [result(state5)]})
+                                }
+                                else {
+                                    return state5
+                                }
+                            }
+                            else if(token(state4) == 'lbrace') {
+                                let state5 = block(state4)
+                                if(succeeded(state5)) {
+                                    /* if with else */
+                                    return success(state5, {'type': 'if_else_statement', 'expr': result(state15), 'if_stmts': stmts(state3), 'else_stmts': stmts(state5)})
+                                }
+                                else {
+                                    return state5
+                                }
+                            }
+                            else {
+                                return failure(state4, "expected if or lbrace, got: " + info(state4), line(state4))
+                            }
+                        }
+                        else {
+                            /* if with no else */
+                            return success(state3, {'type': 'if_else_statement', 'expr': result(state15), 'if_stmts': stmts(state3)})
+                        }
+                    }
+                    else {
+                        return state3
+                    }
+                }
+                else {
+                    return state2
+                }
+            }
+            else {
+                return state15
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function return_statement(state)
+{
+    /*print("return_statement", state, token(state))*/
+    let state0 = expect(state, 'return')
+    if(succeeded(state0)) {
+        let state1 = expression(state0)
+        if(succeeded(state1)) {
+            return success(state1, {'type': 'return_statement', 'expr': result(state1)})
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function recurs_statement(state)
+{
+    /*print("return_statement", state, token(state))*/
+    let state0 = expect(state, 'recurs')
+    if(succeeded(state0)) {
+        let state1 = expect(state0, 'lparen')
+        if(succeeded(state1)) {
+            let state2 = argument_list(state1, true, [])
+            if(succeeded(state2)) {
+                return success(state2, {'type': 'recurs_statement', 'args': result(state2)})
+            }
+            else {
+                return state2
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function let_statement(state)
+{
+    /*print("let_statement", state, token(state))*/
+    let state0 = expect(state, 'let')
+    if(succeeded(state0)) {
+        let state1 = expect(state0, 'identifier')
+        if(succeeded(state1)) {
+            let state2 = expect(state1, 'equals')
+            if(succeeded(state2)) {
+                let state3 = expression(state2)
+                if(succeeded(state3)) {
+                    return success(state3, {'type': 'let_statement', 'name': value(state0), 'expr': result(state3)})
+                }
+                else {
+                    return state3
+                }
+            }
+            else {
+                return state2
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function const_statement(state)
+{
+    let state0 = expect(state, 'const')
+    if(succeeded(state0)) {
+        let state1 = expect(state0, 'identifier')
+        if(succeeded(state1)) {
+            let state2 = expect(state1, 'equals')
+            if(succeeded(state2)) {
+                let state3 = expression(state2)
+                if(succeeded(state3)) {
+                    return success(state3, {'type': 'const_statement', 'name': value(state0), 'expr': result(state3)})
+                }
+                else {
+                    return state3
+                }
+            }
+            else {
+                return state2
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function struct_field_statement(state)
+{
+    let state0 = expect(state, 'keyword')
+    if(succeeded(state0)) {
+        let state1 = expect(state0, 'equals')
+        if(succeeded(state1)) {
+            let state2 = expression(state1)
+            if(succeeded(state2)) {
+                return success(state2, {'type': 'struct_field', 'name': value(state), 'expr': result(state2)})
+            }
+            else {
+                return state2
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function struct_field_statements(state, fields)
+{
+    if(token(state) == 'rbrace') {
+        return success(state, fields)
+    }
+    else {
+        let state0 = struct_field_statement(state)
+        if(succeeded(state0)) {
+            recurs (state0, conj(fields, result(state0)))
+        }
+        else {
+            return state0
+        }
+    }
+}
+
+function struct_statement(state)
+{
+    let state0 = expect(state, 'struct')
+    if(succeeded(state0)) {
+        let state1 = expect(state0, 'identifier')
+        if(succeeded(state1)) {
+            let state2 = expect(state1, 'lbrace')
+            if(succeeded(state2)) {
+                let state3 = struct_field_statements(state2, [])
+                if(succeeded(state3)) {
+                    let state4 = expect(state3, 'rbrace')
+                    if(succeeded(state4)) {
+                        return success(state4, {'type': 'struct_statement', 'name': value(state0), 'stmts': result(state3), 'line': line(state0)})
+                    }
+                    else {
+                        return state4
+                    }
+                }
+                else {
+                    return state3
+                }
+            }
+            else {
+                return state2
+            }
+        }
+        else {
+            return state1
+        }
+    }
+    else {
+        return state0
+    }
+}
+
+function expression_statement(state)
+{
+    let state0 = expression(state)
+    if(succeeded(state0)) {
+        return success(state0, {'type': 'expression_statement', 'expr': result(state0)})
+    }
+    else {
+        return state0
+    }
+}
+
+function statement(state) {
+    /*print("statement", state, token(state))*/
+    let t = token(state)
+    if(t == 'import') {
+        return import_statement(state)
+    }
+    else if(t == 'const') {
+        return const_statement(state)
+    }
+    else if(t == 'struct') {
+        return struct_statement(state)
+    }
+    else if(t == 'function') {
+        return function_statement(state)
+    }
+    else if(t == 'if') {
+        return if_statement(state)
+    }
+    else if(t == 'return') {
+        return return_statement(state)
+    }
+    else if(t == 'recurs') {
+        return recurs_statement(state)
+    }
+    else if(t == 'let') {
+        return let_statement(state)
+    }
+    else {
+        let state0 = expression_statement(state)
+        if(succeeded(state0)) {
+            return state0
+        }
+        else {
+            return failure(state, "expected statement but found: " + info(state), line(state))
+        }
+    }
+}
+
+function statement_list(state, terminator, stmts) {
+    /*print("statement_list", state, token(state), terminator)*/
+    if(token(state) == terminator) {
+        let state0 = accept(state)
+        return success(state0, {'type': 'statement_list', 'stmts': stmts})
+    }
+    else {
+        let state0 = statement(state)
+        if(succeeded(state0)) {
+            recurs (state0, terminator, conj(stmts, result(state0)))
+        }
+        else {
+            return state0
+        }
+    }
+}
+
+function module_(state) {
+    let state0 = statement_list(state, 'eoi', [])
+    if(succeeded(state0)) {
+        return success(state0, {'type': 'module', 'stmts': stmts(state0), 'data': [10,20,30,40]})
+    }
+    else {
+        return state0
+    }
+}
+
+
+
+
+function add_global(env, id) {
+    return assoc(env, 'globals', assoc(env['globals'], id, true))
+}
+
+function add_local(env, id) {
+    return assoc(env, 'locals', assoc(env['locals'], id, length(env['locals']) + 1))
+}
+
+function add_freevar(env, id) {
+    return assoc(env, 'freevars', assoc(env['freevars'], id, length(env['freevars']) + 1))
+}
+
+function push_env(env, node) {
+    /* new scope for function node */
+    let parms = reduce({}, node['parms'], (acc, parm) => {
+        return assoc(acc, parm['value'], length(acc) + 1)
+    })
+    return merge(env, {'locals': {}, 'parms': parms, 'parent': env, 'lambda': get(node, 'name', ''), 'freevars': {}})
+}
+
+function lookup(env, name, level) {
+    if(name in env["parms"]) {
+        return ["parm", level, {}]
+    }
+    else if(name == env["lambda"]) {
+        return ["symbol", level, {'name': '__lambda__'}]
+    }
+    else if(name == '__defers__') {
+        return ["symbol", level, {'name': '__defers__'}]
+    } 
+    else if(name in env["locals"]) {
+        return ["local", level, env["locals"][name]]
+    }
+    else if(name in env["freevars"]) {
+        return ["freevar", level, env["freevars"][name]]
+    }
+    else if(name in env["globals"]) {
+        return ["global", level, {}]
+    }
+    else if(name in env["builtins"]) {
+        return ["builtin", level, {}]
+    }
+    else if("parent" in env) {
+        return lookup(env["parent"], name, level + 1)
+    }
+    else {
+        return ["undefined", level, {}]
+    }
+}
+
+function find_globals(node)
+{
+    function _find_globals(globals, stmts) {
+        if(stmts) {
+            let stmt = first(stmts)
+            let type = stmt['type']
+            if(type == 'import_statement') {
+                let _globals = reduce(globals, stmt['imports'], (acc, _import) => {
+                    return assoc(acc, _import['value'], true)
+                })
+                recurs (_globals, next(stmts))
+            }
+            else if(type == 'function_statement') {
+                recurs (assoc(globals, stmt['name'], true), next(stmts))
+            }
+            else if(type == 'let_statement') {
+                recurs (assoc(globals, stmt['name'], true), next(stmts))
+            }
+            else {
+                recurs (globals, next(stmts))
+            }
+        }
+        else {
+            return globals
+        }
+    }
+    return _find_globals({}, node['stmts'])
+}
+
+function analyze_nodes(analyze, nodes, env, level)
+{
+    return ((result, nodes, env) =>
+    {
+        if(nodes) {
+            let analyze_res = analyze(first(nodes), env, level + 1)
+            recurs (conj(result, first(analyze_res)), next(nodes), second(analyze_res))
+        }
+        else {
+            return [result, env]
+        }
+    })([], nodes, env)
+}
+
+function analyze_function(analyze, node, env, level)
+{
+    let res = analyze_nodes(analyze, node['stmts'], push_env(env, node), level)
+    let env1 = second(res)
+    return [merge(node, {'stmts': first(res), "locals": env1["locals"], "freevars": env1["freevars"] }), env1['parent']]
+}
+
+function analyze(node, env, level)
+{
+    let t = node['type']
+    /* print("analyze", level, t, env) */
+
+    if(t == 'module') {
+        let res = analyze_nodes(analyze, node['stmts'], env, level)
+        return [assoc(node, 'stmts', first(res)), second(res)]
+    }
+    else if(t == 'import_statement') {
+        return [node, env]
+    }
+    else if(t == 'function_statement') {
+        /* TODO check that only appears at level 1*/
+        let name = node['name']
+        let res = analyze_function(analyze, node, env, level)
+        if(level == 1) {
+            return [first(res), add_global(second(res), name)]
+        }
+        else {
+            return [first(res), add_local(second(res), name)]
+        }
+    }
+    else if(t == 'function_literal') {
+        let res = analyze_function(analyze, node, env, level)
+        return [first(res), env]
+    }
+    else if(t == 'if_else_statement') {
+        let expr_res = analyze(node['expr'], env, level + 1)
+        let expr = first(expr_res)
+        let if_stmts_res = analyze_nodes(analyze, node['if_stmts'], second(expr_res), level)
+        let if_stmts = first(if_stmts_res)
+        if('else_stmts' in node) {
+            let else_stmts_res = analyze_nodes(analyze, node['else_stmts'], second(if_stmts_res), level)
+            let else_stmts = first(else_stmts_res)
+            return [merge(node, {'expr': expr, 'if_stmts': if_stmts, 'else_stmts': else_stmts}), second(else_stmts_res)]
+        }
+        else {
+            return [merge(node, {'expr': expr, 'if_stmts': if_stmts}), second(if_stmts_res)]
+        }
+    }
+    else if(t == 'const_statement') {
+        let name = node['name']
+        let expr_res = analyze(node['expr'], env, level + 1)
+        if(level == 1) {
+            let env1 = add_global(second(expr_res), name)
+            return [assoc(node, 'expr', first(expr_res)), env1]
+        }
+        print("const stmt can only be used top level", node, env, name)
+        exit(1)
+    }
+    else if(t == 'struct_statement') {
+        let name = node['name']
+        if(level == 1) {
+            let env1 = add_global(env, name)
+            return [node, env1]
+        }
+        print("struct stmt can only be used top level", node, env, name)
+        exit(1)
+    }
+    else if(t == 'let_statement') {
+        let name = node['name']
+        let expr_res = analyze(node['expr'], env, level + 1)
+        if(level == 1) {
+            print("let stmt cannot be used top level", node, env, name)
+            exit(1)
+        }
+        let env1 = add_local(second(expr_res), name)
+        return [assoc(node, 'expr', first(expr_res)), env1]
+    }
+    else if(t == 'return_statement') {
+        let expr_res = analyze(node['expr'], env, level + 1)
+        let expr = first(expr_res)
+        return [assoc(node, 'expr', expr), second(expr_res)]
+    }
+    else if(t == 'recurs_statement') {
+        let args_res = analyze_nodes(analyze, node['args'], env, level)
+        let args = first(args_res)
+        return [assoc(node, 'args', args), second(args_res)]
+    }
+    else if(t == 'expression_statement') {
+        let expr_res = analyze(node['expr'], env, level + 1)
+        let expr = first(expr_res)
+        return [assoc(node, 'expr', expr), second(expr_res)]
+    }
+    else if(t == 'call') {
+
+        let expr_res = analyze(node['expr'], env, level + 1)
+        let expr = first(expr_res)
+        let args_res = analyze_nodes(analyze, node['args'], second(expr_res), level)
+        let args = first(args_res)
+        return [merge(node, {'expr': expr, 'args': args}), second(args_res)]
+    }
+    else if(t == 'binary_operator') {
+        let left_res = analyze(node['left'], env, level + 1)
+        let left = first(left_res)
+        let right_res = analyze(node['right'], second(left_res), level + 1)
+        let right = first(right_res)
+        return [merge(node, {'left': left, 'right': right}), second(right_res)]
+    }
+    else if(t == 'unary_operator') {
+        let expr_res = analyze(node['expr'], env, level + 1)
+        let expr = first(expr_res)
+        return [assoc(node, 'expr', expr), second(expr_res)]
+    }
+    else if(t == 'identifier') {
+
+        let name = node['value']
+
+        let lookup_result = lookup(env, name, 0)
+        let lookup_type = first(lookup_result)
+        let lookup_level = second(lookup_result)
+        let lookup_data = third(lookup_result)
+
+        if(lookup_type == 'undefined') {
+            print("unknown identifier in analysis", node, env, name)
+            exit(1)
+        }
+        else {
+            /* pass */
+        }
+
+        if(lookup_level > 1) {
+            print("currently only support freevars in immediate env", node, name)
+            exit(1)
+        }
+        else if(lookup_level == 1) {
+            /* freevar */
+            return [node, add_freevar(env, name)]
+        }
+        else {
+            return [node, env]
+        }
+    }
+    else if(t == 'keyword_literal') {
+        return [node, env]
+    }
+    else if(t == 'integer_literal') {
+        return [node, env]
+    }
+    else if(t == 'string_literal') {
+        return [node, env]
+    }
+    else if(t == 'boolean_literal') {
+        return [node, env]
+    }
+    else if(t == 'dict_literal') {
+        return [assoc(node, 'items', map(node['items'], (item) => {
+            let key_res = analyze(item[0], env, level + 1)
+            let key = first(key_res)
+            let val_res = analyze(item[1], env, level + 1)
+            let val = first(val_res)
+            return [key, val]
+        })), env]
+    }
+    else if(t == 'vector_literal') {
+        return [assoc(node, 'items', map(node['items'], (item) => {
+            let item_res = analyze(item, env, level + 1)
+            return first(item_res)
+        })), env]
+    }
+    else {
+        print("unknown node type in analyze: ", t)
+        exit(1)
+    }
+}
+
+function compile_nodes(compile, nodes, env, level)
+{
+    return ((result, nodes, env) =>
+    {
+        if(nodes) {
+            let compile_res = compile(first(nodes), env, level + 1)
+            recurs (conj(result, first(compile_res)), next(nodes), env)
+        }
+        else {
+            return [result, env]
+        }
+    })([], nodes, env)
+}
+
+
+function compile_function(compile, node, env, level)
+{
+
+    /*print(get(node, 'freevars'))*/
+    let env1 = merge(push_env(env, node), {'locals': node['locals'], 'freevars': node['freevars']})
+    /*
+    print("locals", get(env1, 'locals'))
+    print("freevars", get(env1, 'freevars'))
+    print("parms", get(env1, 'parms'))
+    print("globals", get(env1, 'globals'))
+    print("lambda", get(env1, 'lambda'))
+    */
+
+    let stmt_res = compile_nodes(compile, node['stmts'], env1, level)
+
+    /* convert param identifier to symbol */
+    let parms = map(node['parms'], (parm) => {
+        return assoc(parm, 'type', 'symbol')
+    })
+    /* convert locals to symbol */
+    let locals = map(iterator(node['locals']), (local) => {
+        return {'type': 'symbol', 'value': local}
+    })
+
+    let freevars = map(iterator(node['freevars']), (freevar) => {
+        return {'type': 'symbol', 'value': freevar}
+    })
+
+    let func = merge(node, {'type': 'function', 'stmts': first(stmt_res), 'parms': parms, "locals": locals, "freevars": freevars})
+
+    return [func, env]
+}
+
+function const_eval(node)
+{
+    /* TODO why is some stuff like 'assoc' and 'conj' a symbol, and reduce and makeset 'builtin' */
+    let t = node['type']
+    if(t == 'string') {
+        return node['value']
+    }
+    else if(t == 'integer') {
+        return int(node['value'])
+    }
+    else if(t == 'boolean') {
+        if(node['value'] == 'true') {
+            return true 
+        }
+        else {
+            return false
+        }
+    }
+    else if(t == 'dict') {
+        return {}
+    }
+    else if(t == 'vector') {
+        return []
+    }
+    else if(t == 'call') {
+        let fn = const_eval(node['expr'])
+        let argv = map(node['args'], const_eval)
+        let argc = length(argv)
+        if(argc == 1) {
+            return fn(argv[0])
+        }
+        else if(argc == 2) {
+            return fn(argv[0], argv[1])
+        }
+        else if(argc == 3) {
+            return fn(argv[0], argv[1], argv[2])
+        }
+        else {
+            print("unsupported arg len", fn, argv)
+            exit(1)    
+        }
+    }
+    else if(t == 'builtin') {
+        let name = node['value']
+        if(name == 'reduce') {
+            return reduce
+        }
+        else if(name == 'makeset') {
+            return makeset
+        }
+        else if(name == 'add') {
+            return add
+        }
+        else if(name == 'multiply') {
+            return multiply
+        }
+        else if(name == '__builtins__') {
+            return __builtins__
+        }
+        print("unknown builtin in const expr", name)
+        exit(1)
+    }
+    else if(t == 'symbol') {
+        let name = node['value']
+        if(name == 'assoc') {
+            return assoc
+        }
+        else if(name == 'conj') {
+            return conj
+        }
+        else {
+            print("unknown symbol in const expr", name)
+            exit(1)
+        }
+    }
+    else {
+        print("unsupported node in const expr", node)
+        exit(1)
+    }
+}
+
+function compile(node, env, level)
+{
+    /*print("compile", node)*/
+    let t = node['type']
+    if(t == 'module') {
+        let res = compile_nodes(compile, node['stmts'], env, level)
+        return [assoc(node, 'stmts', first(res)), env]
+    }
+    else if(t == 'import_statement') {
+        /* convert param identifier to symbol */
+        let imports = map(node['imports'], (i) => {
+            return assoc(i, 'type', 'symbol')
+        })
+        return [merge(node, {'type': 'import', 'imports': imports}), env]
+    }
+    else if(t == 'function_statement') {
+        let func_res = compile_function(compile, node, env, level)
+        let func = first(func_res)
+        if(level > 1) {
+            return [{'type': 'let', 'name': func['name'], 'expr': func}, env]
+        }
+        else {
+            return [{'type': 'define', 'name': func['name'], 'expr': func}, env]
+        }
+    }
+    else if(t == 'function_literal') {
+        return [first(compile_function(compile, node, env, level)), env]
+    }
+    else if(t == 'if_else_statement') {
+        let expr = compile(node['expr'], env, level + 1)
+        let if_stmts = compile_nodes(compile, node['if_stmts'], env, level)
+        if('else_stmts' in node) {
+            let else_stmts = compile_nodes(compile, node['else_stmts'], env, level)
+            return [merge(node, {'expr': first(expr), 'if_stmts': first(if_stmts), 'else_stmts': first(else_stmts)}), env]
+        }
+        else {
+            return [merge(node, {'expr': first(expr), 'if_stmts': first(if_stmts)}), env]
+        }
+    }
+    else if(t == 'const_statement') {
+        if(level == 1) {
+            let expr = compile(node['expr'], env, level + 1)
+            return [{'type': 'define', 'name': node['name'], 'data': const_eval(first(expr))}, env]
+        }
+        print("const stmt can only be used top level", node, env)
+        exit(1)
+    }
+    else if(t == 'struct_field') {
+        let expr = compile(node['expr'], env, level + 1)
+        return [{'type': 'struct_field', 'name': node['name'], 'data': const_eval(first(expr))}, env]
+    }
+    else if(t == 'struct_statement') {
+        if(level == 1) {
+            let fields = compile_nodes(compile, node['stmts'], env, level)
+            return [{'type': 'define', 'name': node['name'], 'expr': {'name': node['name'], 'type': 'struct', 'stmts': first(fields)}}, env]
+        }
+        print("struct stmt can only be used top level", node, env)
+        exit(1)
+    }
+    else if(t == 'let_statement') {
+        let expr = compile(node['expr'], env, level + 1)
+        if(level > 1) {
+            return [merge(node, {'expr': first(expr), 'type': 'let'}), env]
+        }
+        print("let stmt cannot used top level", node, env)
+        exit(1)
+    }
+    else if(t == 'return_statement') {
+        let expr = compile(node['expr'], env, level + 1)
+        return [merge(node, {'expr': first(expr), 'type': 'return'}), env]
+    }
+    else if(t == 'recurs_statement') {
+        let res = compile_nodes(compile, node['args'], env, level)
+        return [merge(node, {'args': first(res), 'type': 'recur'}), env]
+    }
+    else if(t == 'expression_statement') {
+        let expr = compile(node['expr'], env, level + 1)
+        return [first(expr), env]
+    }
+    else if(t == 'call') {
+        let expr = compile(node['expr'], env, level + 1)
+        let args_res = compile_nodes(compile, node['args'], env, level)
+        return [merge(node, {'expr': first(expr), 'args': first(args_res)}), env]
+    }
+    else if(t == 'binary_operator') {
+        let left = compile(node['left'], env, level + 1)
+        let right = compile(node['right'], env, level + 1)
+        let value = get(node, 'value')
+        if(value == 'contains') {
+            /* we need to swap arguments for the 'in' operator */
+            return [{'type': 'call',
+                     'line': 667,
+                     'expr': {'type': 'symbol', 'value': value},
+                     'args': [first(right), first(left)]}, env]
+        }
+        else if(value == 'and_then') {
+            let branch = {'type': 'if_else_statement',
+                          'expr': first(left),
+                          'if_stmts': [
+                            {'type': 'if_else_statement',
+                             'expr': first(right),
+                             'if_stmts': [{'type': 'boolean', 'value': 'true'}],
+                             'else_stmts': [{'type': 'boolean', 'value': 'false'}]}
+                          ],
+                          'else_stmts': [
+                              {'type': 'boolean', 'value': 'false'}
+                          ]}
+            return [branch, env]
+        }
+        else if(value == 'or_else') {
+            let branch = {'type': 'if_else_statement',
+                          'expr': first(left),
+                          'if_stmts': [
+                            {'type': 'boolean', 'value': 'true'}
+                          ],
+                          'else_stmts': [
+                            {'type': 'if_else_statement',
+                             'expr': first(right),
+                             'if_stmts': [{'type': 'boolean', 'value': 'true'}],
+                             'else_stmts': [{'type': 'boolean', 'value': 'false'}]}
+                          ]}
+            return [branch, env]
+        }
+        else {
+            return [{'type': 'call',
+                     'line': 668,
+                     'expr': first(compile({'type': 'identifier', 'value': value}, env, level)),
+                     'args': [first(left), first(right)]}, env]
+        }
+    }
+    else if(t == 'unary_operator') {
+        /* turn operator into call */
+        let expr = compile(node['expr'], env, level + 1)
+        return [{'type': 'call',
+                 'line': 669,
+                 'expr': {'type': 'symbol', 'value': node['value']},
+                 'args': [first(expr)]}, env]
+    }
+    else if(t == 'identifier') {
+        let name = node['value']
+
+        let lookup_result = lookup(env, name, 0)
+        let lookup_type = first(lookup_result)
+        let lookup_level = second(lookup_result)
+        let lookup_data = third(lookup_result)
+
+        /*print("lkup", name, get(env, 'freevars'), lookup_result)*/
+
+        if(lookup_type == 'symbol') {
+            return [merge(node, {'type': 'symbol', 'value': lookup_data['name']}), env]
+        }
+        else if(lookup_type == 'local') {
+            return [assoc(node, 'type', 'local'), env]
+        }
+        else if(lookup_type == 'parm') {
+            return [assoc(node, 'type', 'local'), env]
+        }
+        else if(lookup_type == 'builtin') {
+            return [assoc(node, 'type', 'builtin'), env]
+        }
+        else if(lookup_type == 'global') {
+            return [assoc(node, 'type', 'global'), env]
+        }
+        else if(lookup_type != 'undefined') {
+            return [assoc(node, 'type', 'symbol'), env]
+        }
+        else {
+            print("unknown identifier", node, name)
+            exit(1)
+        }
+    }
+    else if(t == 'keyword_literal') {
+        return [assoc(node, 'type', 'keyword'), env]
+    }
+    else if(t == 'integer_literal') {
+        return [assoc(node, 'type', 'integer'), env]
+    }
+    else if(t == 'string_literal') {
+        return [assoc(node, 'type', 'string'), env]
+    }
+    else if(t == 'boolean_literal') {
+        return [assoc(node, 'type', 'boolean'), env]
+    }
+    else if(t == 'dict_literal') {
+        return [reduce({'type': 'dict', 'line': get(node, 'line')},
+            node['items'], (acc, item) => {
+
+            let key = first(compile(item[0], env, level + 1))
+            let val = first(compile(item[1], env, level + 1))
+
+            return {'type': 'call',
+                    'line': acc['line'],
+                    'expr': {'type': 'symbol', 'value': 'assoc'},
+                    'args': [acc, key, val]}
+        }), env]
+    }
+    else if(t == 'vector_literal') {
+        return [reduce({'type': 'vector'},
+            node['items'], (acc, item) => {
+            let rest = first(compile(item, env, level + 1))
+            return {'type': 'call',
+                    'line': 611,
+                    'expr': {'type': 'symbol', 'value': 'conj'},
+                    'args': [acc, rest]}
+        }), env]
+    }
+    else {
+        print("unknown node type in compile: ", t)
+        exit(1)
+    }
+}
+
+
+function __compile__(path_in, path_out) {
+    let state0 = module_({$lexer: lexer((slurp(path_in)))})
+    if(succeeded(state0)) {
+        let globals = find_globals(result(state0))
+        let env = {
+            'globals': globals,
+            'locals': {},
+            'parms': {},
+            'freevars': {},
+            'lambda': '',
+            'builtins': builtins
+        }
+        let analyze_res = analyze(result(state0), env, 0)
+        let compile_res = compile(first(analyze_res), second(analyze_res), 0)
+        pack_node(first(compile_res), path_out)
+    }
+    else {
+        print(state0['error'], "line: ", state0['line'])
+        exit()
+    }
+}
+
+function __apply_defers__(defers) {
+    if(defers) {
+        first(defers)()
+        recurs (next(defers))
+    }
+}
+
+function main()
+{
+}

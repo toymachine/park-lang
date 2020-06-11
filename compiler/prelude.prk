@@ -1,0 +1,100 @@
+function map(l, f) {
+    if(l) {
+        return [f(first(l))] + map(next(l), f)
+    }
+    else {
+        return l
+    }
+}
+
+function reduce(acc, l, f) {
+    if(l) {
+        recurs (f(acc, first(l)), next(l), f)
+    }
+    else {
+        return acc
+    }
+}
+
+function foreach(l, f) {
+    if(l) {
+        f(first(l))
+        recurs (next(l), f)
+    }
+    else {}
+}
+
+function times(n, f) {
+    if(n == 0) {
+        return n
+    }
+    else {
+        f(n - 1)
+        recurs (n - 1, f)
+    }
+}
+
+function second(l) {
+    return get(l, 1)
+}
+
+function third(l) {
+    return get(l, 2)
+}
+
+function merge(m1, m2)
+{
+    return reduce(m1, iterator(m2), (acc, i) => {
+        return assoc(acc, i, get(m2, i))
+    })
+}
+
+function runpar(n, fn) {
+    /* TODO no need to pass ch and fn, if compiler is fixed to allow ref to outer outer lexical scope */
+    let fork_ = (ch, fn, n) => {
+        if (n == 0) {
+            return n
+        }
+        else {
+            spawn(() => {
+               send(ch, fn())
+            })
+            recurs (ch, fn, n - 1)
+        }
+    }
+  
+    let join_ = (ch, fn, n) => {
+        if(n == 0) {
+          return n
+        }
+        else {
+          recv(ch)
+          recurs (ch, fn, n - 1)
+        }
+    }
+  
+    let ch = channel()
+  
+    fork_(ch, fn, n) 
+    join_(ch, fn, n)
+}
+
+function swap(a, f) {
+    let oldval = deref(a)
+    let newval = f(oldval)
+    if(compare_and_set(a, oldval, newval)) {
+        return newval
+    }
+    else {
+        sleep(0)
+        recurs (a, f)
+    }
+}
+
+function makeset(lst) {
+    return reduce({}, lst, (acc, item) => {
+        return assoc(acc, item, true)
+    })
+}
+
+function main() {}
