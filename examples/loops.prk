@@ -1,0 +1,15 @@
+function loop(n)
+{
+    if(n == 0) {
+        return 0
+    }
+    else {
+        print(n)
+        recurs (n - 1) /* tail recursive call to current function */
+    }
+}
+
+function main()
+{
+    loop(10) 
+}
