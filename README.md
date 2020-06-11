@@ -3,10 +3,11 @@ Park programming language
 
 1. Install docker
 2. Clone this repo
-3. cd park-lang
-4. docker run -v $(pwd):/mnt/park -w /mnt/park -it toymachine/park-lang /bin/park examples/hello.prk
+3. ```cd park-lang```
+4. ```./park examples/hello.prk```
 
-## Hello World
+## Hello World 
+```./park examples/hello.prk```
 ```javascript
 function main()
 {
@@ -15,6 +16,7 @@ function main()
 ```
 
 ## Basics
+```./park examples/basics.prk```
 ```javascript
 function main()
 {
@@ -32,6 +34,7 @@ function main()
 ```
 
 ## Functions
+```./park examples/functions.prk```
 ```javascript
 function sum(a, b) /* defining a function */
 {
@@ -45,5 +48,30 @@ function main() /* main entry function */
     times(10, (n) => { /* anonymous function passed as argument */
         print(n)
     })
+}
+```
+
+## Loops and Recursion
+There is currently no syntax for loops (for, do, while etc) in the language.
+Instead the ```recur``` statement is used to perform loops. The ```recur``` statement
+makes a recursive call to the current function without growing the stack.
+The ```recur``` statement can only be used in a tail position.
+
+```./park examples/loops.prk```
+```javascript
+function loop(n)
+{
+    if(n == 0) {
+        return 0
+    }
+    else {
+        print(n)
+        recurs (n - 1) /* tail recursive call to current function */
+    }
+}
+
+function main()
+{
+    loop(10) 
 }
 ```
