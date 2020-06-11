@@ -13,3 +13,20 @@ function main()
     print("Hello World!")
 }
 ```
+
+## Basics
+```javascript
+function main()
+{
+    let a = 1 /* integer */
+    let b = 2 
+    let c = true /* bool */
+    let d = false 
+    let e = "Hello" /* string */
+    let f = "World!"
+
+    print(a + b)
+    print(c == d)
+    print(e + " " + f)
+}
+```
