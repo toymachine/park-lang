@@ -30,3 +30,20 @@ function main()
     print(e + " " + f)
 }
 ```
+
+## Functions
+```javascript
+function sum(a, b) /* defining a function */
+{
+    return a + b
+}
+
+function main() /* main entry function */
+{
+    print(sum(10, 20)) /* calling a function */
+
+    times(10, (n) => { /* anonymous function passed as argument */
+        print(n)
+    })
+}
+```
