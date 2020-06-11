@@ -1,0 +1,21 @@
+function fac(n, acc) {
+  if(n == 0) {
+    return acc
+  }
+  else {
+    recurs (n - 1, n * acc)
+  }
+}
+
+function loop(n, acc) {
+  if(n == 0) {
+    return acc
+  }
+  else {
+    recurs (n - 1, acc + fac(5, 1))
+  }
+}
+
+function main() {
+  print(loop(1000000, 0))
+}
