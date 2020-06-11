@@ -3,7 +3,7 @@ Park programming language
 
 1. Install docker
 2. Clone this repo
-3. cd park-lang
+3. ```cd park-lang```
 4. ```./park examples/hello.prk```
 
 ## Hello World
