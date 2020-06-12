@@ -79,6 +79,7 @@ function main()
 ## Fibers and Channels
 The language supports lightweight threads named Fibers. Fibers are scheduled 
 M:N on actual OS threads.
+
 ```./park examples/channel.prk```
 ```javascript
 function child(chan)
