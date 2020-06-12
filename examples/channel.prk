@@ -1,0 +1,31 @@
+
+function child(chan)
+{
+    print("child: i am child")
+    sleep(1000)   /* sleep for a second */
+    print("child: send to parent 1")
+    send(chan, 1) /* would block if there is no receiver */
+    sleep(1000)
+    print("child: send to parent 2")
+    send(chan, 2)
+    sleep(1000)
+    print("child: send to parent 3")
+    send(chan, 3)
+    print("child: done")
+    exit() /* exits current fiber */
+}
+
+function main() {
+    let chan = channel() /* create a channel to communicate between fibers */
+
+    spawn(() => {    /* creates a new fiber that will execute the given function */
+        child(chan)
+    })
+
+    print("parent: i am parent")
+    print(recv(chan)) /* blocks on recv till somebody sends a value */
+    print(recv(chan))
+    print(recv(chan))
+    print("parent: done")
+}
+
