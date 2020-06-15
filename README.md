@@ -110,8 +110,8 @@ function main()
 ```
 
 ## Fibers and Channels
-The language supports lightweight threads named Fibers. Fibers are scheduled 
-M:N on actual OS threads.
+The language supports lightweight threads named Fibers. A channel object can be used to communicate values between Fibers.
+Fibers are scheduled M:N on a limited number actual OS threads. Fibers are small enough (currently around 2KB) so that you can have millions of them on a single machine.
 
 ```./park examples/channel.prk```
 ```javascript
