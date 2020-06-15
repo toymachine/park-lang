@@ -1,0 +1,22 @@
+function main()
+{
+    /* containers types are immutable */
+
+    let d = {} /* empty map (associative container) */
+
+    let d1 = assoc(d, "a", 10)   /* put stuff in the map */
+    let d2 = assoc(d1, "b", 20)
+
+    print(d2) /* {a: 10, b: 20} */
+
+    print(d2["a"]) /* 10 */
+    print(get(d2, "b")) /* 20 */
+
+    let v = [] /* empty vector */
+    let v1 = conj(v, 10) /* add to the vector */
+    let v2 = conj(v1, 20)
+
+    print(v2) /* [10, 20] */
+    print(v2[0]) /* 10 */
+    print(get(v2, 1)) /* 20 */
+}
