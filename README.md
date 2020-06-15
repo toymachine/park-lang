@@ -1,10 +1,16 @@
 # park-lang
-Park programming language
+This page describes the Park programming language. 
+
+The Park language has been my side project for a long time.
+
+It is a dynamically typed language that is inspired by Clojure (Immutability), Javascript (Syntax) and various languages that support lightweight threads (Erlang, Go, Stackless Python). Most of my focus has been on the runtime implementation and not so much on the syntax. Initially I had considered a syntax more similar to Python but I found the Javascript/C style syntax easier to parse. Also it allows more naturally for multi-line lambda/closure syntax that fits better with the mostly functional style of the language.
+
 
 1. Install docker
 2. Clone this repo
 3. ```cd park-lang```
-4. ```./park examples/hello.prk```
+
+From there you can play some of the examples:
 
 ## Hello World 
 ```./park examples/hello.prk```
