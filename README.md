@@ -94,11 +94,12 @@ The ```recur``` statement can only be used in a tail position.
 ```javascript
 function loop(n)
 {
+    print(n)
+
     if(n == 0) {
         return 0
     }
     else {
-        print(n)
         recurs (n - 1) /* tail recursive call to current function */
     }
 }
