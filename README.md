@@ -1,10 +1,16 @@
 # park-lang
-Park programming language
+This page describes the Park programming language. 
+
+The Park language has been my side project for a long time.
+
+It is a dynamically typed language that is inspired by Clojure (Immutability), Javascript (Syntax) and various languages that support lightweight threads (Erlang, Go, Stackless Python). Most of my focus has been on the runtime implementation and not so much on the syntax. Initially I had considered a syntax more similar to Python but I found the Javascript/C style syntax easier to parse. Also it allows more naturally for multi-line lambda/closure syntax that fits better with the mostly functional style of the language.
+
 
 1. Install docker
 2. Clone this repo
 3. ```cd park-lang```
-4. ```./park examples/hello.prk```
+
+From there you can play some of the examples:
 
 ## Hello World 
 ```./park examples/hello.prk```
@@ -88,11 +94,12 @@ The ```recur``` statement can only be used in a tail position.
 ```javascript
 function loop(n)
 {
+    print(n)
+
     if(n == 0) {
         return 0
     }
     else {
-        print(n)
         recurs (n - 1) /* tail recursive call to current function */
     }
 }
@@ -104,8 +111,8 @@ function main()
 ```
 
 ## Fibers and Channels
-The language supports lightweight threads named Fibers. Fibers are scheduled 
-M:N on actual OS threads.
+The language supports lightweight threads named Fibers. A channel object can be used to communicate values between Fibers.
+Fibers are scheduled M:N on a limited number actual OS threads. Fibers are small enough (currently around 2KB) so that you can have millions of them on a single machine.
 
 ```./park examples/channel.prk```
 ```javascript
