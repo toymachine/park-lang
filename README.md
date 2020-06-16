@@ -146,3 +146,30 @@ function main() {
     print("parent: done")
 }
 ```
+
+## Structs and Keywords
+A ```struct``` is a user defined container type that has fields indexed by ```keyword```. A keyword is created by using the literal syntax ```$<identifier>```.
+
+```./park examples/struct.prk```
+```javascript
+/* define a struct with fields and their default values */
+struct Foo {
+  $a = 10  /* identifier starting with a $ is a keyword. */
+  $b = 20 
+  $c = 10
+}
+
+function main()
+{
+  print(Foo) /* the struct itself */
+  let foo = Foo(1, 2, 3) /* A struct is callable and yields an instance of the struct */
+  print(foo)
+  print($a) /* A keywords evaluates to itself */
+  print(foo[$a], foo[$b], foo[$c]) /* Structs are indexed by using keywords */
+  print($a(foo))  /* A keyword is callable and takes a struct to return the field value */
+}
+
+/* TODO add 'dot' syntax a.b.c to mean c(b(a)). combined with 
+keywords would allow field access like this foo.$a, foo.$b etc
+as foo.$a would turn in to $a(foo) */
+```
