@@ -1,10 +1,15 @@
 function map(l, f) {
-    if(l) {
-        return [f(first(l))] + map(next(l), f)
+
+    let _map = (acc, rst)  => {
+        if(rst) {
+            recurs (conj(acc,  f(first(rst))), next(rst))
+        }
+        else {
+            return acc
+        }
     }
-    else {
-        return l
-    }
+
+    return _map([], l)
 }
 
 function reduce(acc, l, f) {
