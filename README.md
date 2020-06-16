@@ -148,7 +148,7 @@ function main() {
 ```
 
 ## Structs and Keywords
-A ```struct``` is a user defined container type that has fields indexed by ```keyword```. A keyword is created by using the literal syntax ```$<identifier```.
+A ```struct``` is a user defined container type that has fields indexed by ```keyword```. A keyword is created by using the literal syntax ```$<identifier>```.
 
 ```./park examples/struct.prk```
 ```javascript
@@ -166,7 +166,7 @@ function main()
   print(foo)
   print($a) /* A keywords evaluates to itself */
   print(foo[$a], foo[$b], foo[$c]) /* Structs are indexed by using keywords */
-  print($a(foo))  /* A keyword is also a callable that takes a struct and returns the field value */
+  print($a(foo))  /* A keyword is callable and takes a struct to return the field value */
 }
 
 /* TODO add 'dot' syntax a.b.c to mean c(b(a)). combined with 
