@@ -1,0 +1,27 @@
+function create_receiver(ch)
+{
+    let receiver = (acc) => {
+        let i = recv(ch) /* block to receive msg */
+        recurs(assoc(acc, i, i)) /* add it to my collection and loop */
+    }
+
+    spawn(() => {
+        receiver({})
+    })
+}
+
+function main()
+{
+    let n = 100000
+    print("createing ", n, "fibers")
+    let ch = channel()
+    times(n, (n) => {
+        create_receiver(ch)
+    })
+    print("sending ", n, " messages")
+    times(n, (n) => {
+        send(ch, n)
+        sleep(0)
+    })
+    print("send done")
+}
