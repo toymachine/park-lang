@@ -150,7 +150,7 @@ function main() {
 Another way to share data between fibers is to use an ```atom```. An atom is a value that can be atomically changed by a fiber using 
 the ```swap``` function. 
 
-```./park examples/channel.prk```
+```./park examples/atom.prk```
 ```javascript
 const a = atom(0)
 
