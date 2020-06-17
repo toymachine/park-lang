@@ -110,8 +110,8 @@ function main()
 }
 ```
 
-## Fibers and Channels
-The language supports lightweight threads named Fibers. A channel object can be used to communicate values between Fibers.
+## Fibers
+The language supports lightweight threads named Fibers. A Channel object can be used to communicate values between Fibers.
 Fibers are scheduled M:N on a limited number actual OS threads. Fibers are small enough (currently around 2KB) so that you can have millions of them on a single machine.
 
 ```./park examples/channel.prk```
@@ -146,6 +146,26 @@ function main() {
     print("parent: done")
 }
 ```
+
+Another way to share data between fibers is to use an ```atom```. An atom is a value that can be atomically changed by a fiber using 
+the ```swap``` function. 
+
+```./park examples/channel.prk```
+```javascript
+const a = atom(0)
+
+function main() {
+    runpar(10, () => {  /* run the given (anonymous) function on 10 fibers concurrently */
+        times(100000, () => { /* execute the give function 10.000 times */
+            swap(a, (v) => { /* update the atom using the given function. the current value is given as argument */
+                return v + 1
+              })  	
+        })
+    })
+    print(deref(a)) /* 1 million (e.g. 10 fibers concurrently incrementing the atom 100.000 times */
+}
+```
+
 
 ## Structs and Keywords
 A ```struct``` is a user defined container type that has fields indexed by ```keyword```. A keyword is created by using the literal syntax ```$<identifier>```.
