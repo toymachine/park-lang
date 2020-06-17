@@ -68,6 +68,7 @@ function main()
     print(v2[0]) /* 10 */
     print(get(v2, 1)) /* 20 */
 }
+
 ```
 
 
