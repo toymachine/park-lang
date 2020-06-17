@@ -1,12 +1,12 @@
 const a = atom(0)
 
 function main() {
-    runpar(10, () => {
-        times(100000, () => {
-            swap(a, (v) => {
+    runpar(10, () => { /* Run the given (anonymous) function on 10 fibers concurrently */
+        times(100000, () => { /* Execute the given function 10.000 times */
+            swap(a, (v) => { /* Update the atom using given function. The current value is given as argument */
                 return v + 1
               })  	
         })
     })
-    print(deref(a))
+    print(deref(a)) /* 1 million (e.g. 10 fibers each concurrently incremented the atom 100.000 times */
 }

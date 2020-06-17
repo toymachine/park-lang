@@ -1,8 +1,6 @@
 # park-lang
 This page describes the Park programming language. 
 
-The Park language has been my side project for a long time.
-
 It is a dynamically typed language that is inspired by Clojure (Immutability), Javascript (Syntax) and various languages that support lightweight threads (Erlang, Go, Stackless Python). Most of my focus has been on the runtime implementation and not so much on the syntax. Initially I had considered a syntax more similar to Python but I found the Javascript/C style syntax easier to parse. Also it allows more naturally for multi-line lambda/closure syntax that fits better with the mostly functional style of the language.
 
 
@@ -13,6 +11,7 @@ It is a dynamically typed language that is inspired by Clojure (Immutability), J
 From there you can play some of the examples:
 
 ## Hello World 
+
 ```./park examples/hello.prk```
 ```javascript
 function main()
@@ -21,7 +20,9 @@ function main()
 }
 ```
 
+
 ## Basics
+
 ```./park examples/basics.prk```
 ```javascript
 function main()
@@ -37,9 +38,12 @@ function main()
     print(c == d)
     print(e + " " + f)
 }
+
 ```
 
+
 ## Container types
+
 ```./park examples/containers.prk```
 ```javascript
 function main()
@@ -66,7 +70,9 @@ function main()
 }
 ```
 
+
 ## Functions
+
 ```./park examples/functions.prk```
 ```javascript
 function sum(a, b) /* defining a function */
@@ -84,11 +90,13 @@ function main() /* main entry function */
 }
 ```
 
+
 ## Loops and Recursion
 There is currently no syntax for loops (for, do, while etc) in the language.
 Instead the ```recur``` statement is used to perform loops. The ```recur``` statement
 makes a recursive call to the current function without growing the stack.
 The ```recur``` statement can only be used in a tail position.
+
 
 ```./park examples/loops.prk```
 ```javascript
@@ -110,12 +118,15 @@ function main()
 }
 ```
 
+
 ## Fibers
 The language supports lightweight threads named Fibers. A Channel object can be used to communicate values between Fibers.
 Fibers are scheduled M:N on a limited number actual OS threads. Fibers are small enough (currently around 2KB) so that you can have millions of them on a single machine.
 
+
 ```./park examples/channel.prk```
 ```javascript
+
 function child(chan)
 {
     print("child: i am child")
@@ -145,51 +156,58 @@ function main() {
     print(recv(chan))
     print("parent: done")
 }
+
+
 ```
 
-Another way to share data between fibers is to use an ```atom```. An atom is a value that can be atomically changed by a fiber using 
+
+Another way to share data between fibers is to use an ```atom```. An atom is a value that can be atomically changed by a fiber using
 the ```swap``` function. 
 
-```./park examples/channel.prk```
+
+```./park examples/atom.prk```
 ```javascript
 const a = atom(0)
 
 function main() {
-    runpar(10, () => {  /* run the given (anonymous) function on 10 fibers concurrently */
-        times(100000, () => { /* execute the give function 10.000 times */
-            swap(a, (v) => { /* update the atom using the given function. the current value is given as argument */
+    runpar(10, () => { /* Run the given (anonymous) function on 10 fibers concurrently */
+        times(100000, () => { /* Execute the given function 10.000 times */
+            swap(a, (v) => { /* Update the atom using given function. The current value is given as argument */
                 return v + 1
               })  	
         })
     })
-    print(deref(a)) /* 1 million (e.g. 10 fibers concurrently incrementing the atom 100.000 times */
+    print(deref(a)) /* 1 million (e.g. 10 fibers each concurrently incremented the atom 100.000 times */
 }
 ```
+
 
 
 ## Structs and Keywords
 A ```struct``` is a user defined container type that has fields indexed by ```keyword```. A keyword is created by using the literal syntax ```$<identifier>```.
 
+
 ```./park examples/struct.prk```
 ```javascript
-/* define a struct with fields and their default values */
+/* Define a struct with fields and their default values */
 struct Foo {
-  $a = 10  /* identifier starting with a $ is a keyword. */
-  $b = 20 
+  $a = 10  /* An identifier starting with a $ is a keyword. */
+  $b = 20  
   $c = 10
 }
 
 function main()
 {
-  print(Foo) /* the struct itself */
+  print(Foo) /* The struct itself */
   let foo = Foo(1, 2, 3) /* A struct is callable and yields an instance of the struct */
   print(foo)
-  print($a) /* A keywords evaluates to itself */
   print(foo[$a], foo[$b], foo[$c]) /* Structs are indexed by using keywords */
-  print($a(foo))  /* A keyword is callable and takes a struct to return the field value */
+  print($a) /* A keywords evaluates to itself */
+  print($a(foo))  /* A keyword is also a callable that takes a struct and returns the field value */
 }
 
 /* TODO add 'dot' syntax a.b.c to mean c(b(a)). combined with 
 keywords would allow field access like this foo.$a, foo.$b etc
 as foo.$a would turn in to $a(foo) */
 ```
+

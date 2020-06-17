@@ -1,29 +1,20 @@
-/* define a struct with fields and their default values */
+/* Define a struct with fields and their default values */
 struct Foo {
-  $a = 10  /* identifier starting with a $ is a keyword. a keyword evaluates to itself as */
-  $b = 20  /* opposed to normal identifier which references a value (e.g. let statement) */
+  $a = 10  /* An identifier starting with a $ is a keyword. */
+  $b = 20  
   $c = 10
 }
 
 function main()
 {
-  print(Foo) /* the struct itself */
-  let foo = Foo(1, 2, 3) /* struct is callable and yields an instance of the struct */
+  print(Foo) /* The struct itself */
+  let foo = Foo(1, 2, 3) /* A struct is callable and yields an instance of the struct */
   print(foo)
-  print(foo[$a], foo[$b], foo[$c]) /* structs are indexed by using keywords */
-  print($a) /* a keywords evaluates to itself */
-  print($a(foo))  /* but a keyword is also a callable that takes a struct and returns the field value */
+  print(foo[$a], foo[$b], foo[$c]) /* Structs are indexed by using keywords */
+  print($a) /* A keywords evaluates to itself */
+  print($a(foo))  /* A keyword is also a callable that takes a struct and returns the field value */
 }
 
 /* TODO add 'dot' syntax a.b.c to mean c(b(a)). combined with 
 keywords would allow field access like this foo.$a, foo.$b etc
 as foo.$a would turn in to $a(foo) */
-
-
-
-
-
-
-
-
-
