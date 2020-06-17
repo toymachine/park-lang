@@ -1,0 +1,12 @@
+const a = atom(0)
+
+function main() {
+    runpar(10, () => {
+        times(100000, () => {
+            swap(a, (v) => {
+                return v + 1
+              })  	
+        })
+    })
+    print(deref(a))
+}

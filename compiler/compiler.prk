@@ -1336,6 +1336,9 @@ function const_eval(node)
         else if(name == 'multiply') {
             return multiply
         }
+        else if(name == 'atom') {
+            return atom
+        }
         else if(name == '__builtins__') {
             return __builtins__
         }
