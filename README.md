@@ -127,8 +127,11 @@ function main()
 
 ## Fibers
 The language supports lightweight threads named Fibers. A Channel object can be used to communicate values between Fibers.
-Fibers are scheduled M:N on a limited number actual OS threads. \
+Fibers are scheduled M:N on a limited number actual OS threads.
 Fibers are small enough (currently around 2KB) so that you can have millions of them on a single machine.
+Fibers have their own stack and can be blocked and resumed by the runtime. This allows traditional 'blocking' semantics 
+on IO and channel sends and receives. The language as a result does not suffer from callback hell or the
+[function color problem described here](https://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/)
 
 
 ```./park examples/channel.prk```
@@ -261,3 +264,55 @@ You can even modify the compiler and have it recompile just by running
 
 The runtime is written in C++. It contains a low pause (<1ms) concurrent garbage collector, module loader, JIT, fiber scheduler and the implementations of the builtin types.
 The runtime is currently not included in the public repo as I am still considering what to do with it.
+
+## Async IO 
+
+The runtime uses asynchronous IO under te hood but exposes a synchronous (blocking) interface at the source level.
+The following is an example http server. You can start it and point your browser 
+at http://localhost:8090/
+
+
+```./park examples/http.prk```
+```javascript
+function write_response(connection)
+{
+    write(connection, "HTTP/1.1 200 OK\r\n")
+    write(connection, "Content-Length: 12\r\n")
+    write(connection, "Content-Type: text/plain\r\n")
+    write(connection, "Connection: keep-alive\r\n")
+    write(connection, "\r\n")
+    write(connection, "Hello World!")
+    http_response_finish(connection)
+}
+
+function handle_requests(connection) 
+{
+    http_read_request(connection)
+    write_response(connection)
+    if(http_keepalive(connection)) {
+        recurs (connection)
+    }
+}
+
+function handle_connections(server) {
+    let connection = http_accept_connection(server) /* blocks until incoming connection */
+    spawn(() => { /* spawn fiber to handle request */
+        handle_requests(connection) /* handle all requests on this connection */
+        defer(() => { /* no matter how we exit this function, always run this deferred function */
+            close(connection)
+        })
+    })
+    recurs (server)
+}
+
+function main() {
+    let server = http_server("127.0.0.1", "8090")
+    runpar(4, () => { /* start 4 fibers to handle connections concurrently */
+        handle_connections(server)
+    })
+}
+
+
+```
+
+

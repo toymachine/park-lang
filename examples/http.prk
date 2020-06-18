@@ -1,0 +1,38 @@
+function write_response(connection)
+{
+    write(connection, "HTTP/1.1 200 OK\r\n")
+    write(connection, "Content-Length: 12\r\n")
+    write(connection, "Content-Type: text/plain\r\n")
+    write(connection, "Connection: keep-alive\r\n")
+    write(connection, "\r\n")
+    write(connection, "Hello World!")
+    http_response_finish(connection)
+}
+
+function handle_requests(connection) 
+{
+    http_read_request(connection)
+    write_response(connection)
+    if(http_keepalive(connection)) {
+        recurs (connection)
+    }
+}
+
+function handle_connections(server) {
+    let connection = http_accept_connection(server) /* blocks until incoming connection */
+    spawn(() => { /* spawn fiber to handle request */
+        handle_requests(connection) /* handle all requests on this connection */
+        defer(() => { /* no matter how we exit this function, always run this deferred function */
+            close(connection)
+        })
+    })
+    recurs (server)
+}
+
+function main() {
+    let server = http_server("127.0.0.1", "8090")
+    runpar(4, () => { /* start 4 fibers to handle connections concurrently */
+        handle_connections(server)
+    })
+}
+
