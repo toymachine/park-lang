@@ -1,16 +1,19 @@
 # park-lang
 This page describes the Park programming language. 
 
-It is a dynamically typed language that is inspired by Clojure (Immutability), Javascript (Syntax) and various languages that support lightweight threads (Erlang, Go, Stackless Python). 
+It is a dynamically typed language that is inspired by Clojure (Immutability), Javascript (Syntax) and various languages that have lightweight threads (Erlang, Go, Stackless Python). 
+
 Most of my focus has been on the runtime implementation and not so much on the syntax.
-Initially I had considered a syntax more similar to Python but I found the Javascript/C style syntax easier to parse. 
-Also it allows more naturally for multi-line lambda/closure syntax that fits better with the mostly functional style of the language.
+
+Initially I had considered a syntax more similar to Python but I found the Javascript/C style syntax easier to parse.
+
+To play with the language:
 
 1. Install docker
 2. Clone this repo
 3. ```cd park-lang```
 
-From there you can play some of the examples:
+Then run any of the following examples or create and run your own scripts
 
 ## Hello World 
 
@@ -186,7 +189,7 @@ function main() {
 ```
 
 
-An example of starting 100.000 fibers 
+The following example starts 100.000 fibers and sends a message to each of them using a channel
 
 
 ```./park examples/fiber.prk```
@@ -250,3 +253,11 @@ keywords would allow field access like this foo.$a, foo.$b etc
 as foo.$a would turn in to $a(foo) */
 ```
 
+
+## Compiler and runtime
+The compiler is included in this repo and [can be found here](runtime/compiler.prk). The compiler is written the Park language. 
+You can even modify the compiler and have it recompile just by running
+```./park runtime/compiler.prk```
+
+The runtime is written in C++. It contains a low pause (<1ms) concurrent garbage collector, module loader, JIT, fiber scheduler and the implementations of the builtin types.
+The runtime is currently not included in the public repo as I am still considering what to do with it.
