@@ -1,8 +1,10 @@
 # park-lang
 This page describes the Park programming language. 
 
-It is a dynamically typed language that is inspired by Clojure (Immutability), Javascript (Syntax) and various languages that support lightweight threads (Erlang, Go, Stackless Python). Most of my focus has been on the runtime implementation and not so much on the syntax. Initially I had considered a syntax more similar to Python but I found the Javascript/C style syntax easier to parse. Also it allows more naturally for multi-line lambda/closure syntax that fits better with the mostly functional style of the language.
-
+It is a dynamically typed language that is inspired by Clojure (Immutability), Javascript (Syntax) and various languages that support lightweight threads (Erlang, Go, Stackless Python). 
+Most of my focus has been on the runtime implementation and not so much on the syntax.
+Initially I had considered a syntax more similar to Python but I found the Javascript/C style syntax easier to parse. 
+Also it allows more naturally for multi-line lambda/closure syntax that fits better with the mostly functional style of the language.
 
 1. Install docker
 2. Clone this repo
@@ -122,7 +124,8 @@ function main()
 
 ## Fibers
 The language supports lightweight threads named Fibers. A Channel object can be used to communicate values between Fibers.
-Fibers are scheduled M:N on a limited number actual OS threads. Fibers are small enough (currently around 2KB) so that you can have millions of them on a single machine.
+Fibers are scheduled M:N on a limited number actual OS threads. \
+Fibers are small enough (currently around 2KB) so that you can have millions of them on a single machine.
 
 
 ```./park examples/channel.prk```
@@ -179,6 +182,41 @@ function main() {
         })
     })
     print(deref(a)) /* 1 million (e.g. 10 fibers each concurrently incremented the atom 100.000 times */
+}
+```
+
+
+An example of starting 100.000 fibers 
+
+
+```./park examples/fiber.prk```
+```javascript
+function create_receiver(ch)
+{
+    let receiver = (acc) => {
+        let i = recv(ch) /* block to receive msg */
+        recurs(assoc(acc, i, i)) /* add it to my collection and loop */
+    }
+
+    spawn(() => {
+        receiver({})
+    })
+}
+
+function main()
+{
+    let n = 100000
+    print("createing ", n, "fibers")
+    let ch = channel()
+    times(n, (n) => {
+        create_receiver(ch)
+    })
+    print("sending ", n, " messages")
+    times(n, (n) => {
+        send(ch, n)
+        sleep(0)
+    })
+    print("send done")
 }
 ```
 
