@@ -1,11 +1,5 @@
 # park-lang
-This page describes the Park programming language. 
-
-It is a dynamically typed language that is inspired by Clojure (Immutability), Javascript (Syntax) and various languages that have lightweight threads (Erlang, Go, Stackless Python). 
-
-Most of my focus has been on the runtime implementation and not so much on the syntax.
-
-Initially I had considered a syntax more similar to Python but I found the Javascript/C style syntax easier to parse.
+```Park``` is a dynamically typed language that is inspired by Clojure (Immutability), Javascript (Syntax) and various languages that have lightweight threads (Erlang, Go, Stackless Python). 
 
 To play with the language:
 
@@ -126,9 +120,9 @@ function main()
 
 
 ## Fibers
-The language supports lightweight threads named Fibers. A Channel object can be used to communicate values between Fibers.
-Fibers are scheduled M:N on a limited number actual OS threads.
-Fibers are small enough (currently around 2KB) so that you can have millions of them on a single machine.
+The language supports lightweight threads named ```Fibers```. A ```Channel``` object can be used to communicate values between Fibers.
+Fibers are scheduled M:N on a limited number of actual OS threads.
+Fibers are small enough (initial stack + heap = ~2KB) so that you can have millions of them on a single machine.
 Fibers have their own stack and can be blocked and resumed by the runtime. This allows traditional 'blocking' semantics 
 on IO and channel sends and receives. The language as a result does not suffer from callback hell or the
 [function color problem described here](https://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/)
@@ -258,8 +252,8 @@ as foo.$a would turn in to $a(foo) */
 
 
 ## Compiler and runtime
-The compiler is included in this repo and [can be found here](runtime/compiler.prk). The compiler is written the Park language. 
-You can even modify the compiler and have it recompile just by running
+The compiler is included in this repo and [can be found here](runtime/compiler.prk). The compiler is written in the Park language. 
+You can modify the compiler and recompile by running
 ```./park runtime/compiler.prk```
 
 The runtime is written in C++. It contains a low pause (<1ms) concurrent garbage collector, module loader, JIT, fiber scheduler and the implementations of the builtin types.
@@ -267,9 +261,9 @@ The runtime is currently not included in the public repo as I am still consideri
 
 ## Async IO 
 
-The runtime uses asynchronous IO under te hood but exposes a synchronous (blocking) interface at the source level.
+The runtime uses asynchronous IO under the hood but exposes a synchronous (blocking) interface at the language level.
 The following is an example http server. You can start it and point your browser 
-at http://localhost:8090/
+at http://localhost:8090/ to see a familiar greeting!.
 
 
 ```./park examples/http.prk```
