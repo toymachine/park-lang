@@ -1,13 +1,43 @@
 # park-lang
 ```Park``` is a dynamically typed language that is inspired by Clojure (Immutability), Javascript (Syntax) and various languages that have lightweight threads (Erlang, Go, Stackless Python). 
 
-To play with the language:
+To play with the language you will need either MacOS or Linux. You can run to examples using Docker, or you can 
+choose to build the executable yourself.
 
-1. Install docker
+## Using Docker
+If you just want to play around with the examples below 
+
+1. Install Docker Desktop for MacOS or Linux (http://www.docker.com)
 2. Clone this repo
 3. ```cd park-lang```
+4. ```ln -s park.sh park```
 
-Then run any of the following examples or create and run your own scripts
+Now you are ready to run the examples below
+
+## Building on MacOS:
+
+1. You will need to have XCode and its command line tools ```xcode-select --install```
+2. Install boost using Homebrew ```brew install boost```
+3. Install cmake using Homebrew ```brew install cmake```
+4. Continue with 'Build using CMake below'
+
+## Building on Linux:
+1. Install llvm, boost and cmake dependencies (on ubuntu: ```apt-get install build-essential cmake llvm clang libboost-all-dev```)
+2. Continue with 'Build using CMake below'
+
+## Build using CMake:
+4. Clone this repo
+5. ```cd park-lang```
+6. ```mkdir Release```
+7. ```cd Release```
+8. ```cmake -DCMAKE_BUILD_TYPE=Release ..```
+9. ```make```
+10. ```cd ..```
+11. ```ln -s ./Release/src/app/park park```
+
+Now continue to run the examples below
+
+# Examples
 
 ## Hello World 
 
