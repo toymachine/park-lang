@@ -2,7 +2,7 @@ function main()
 {
     let read_all = (r) => {
         if(r) {
-            print(first(r))
+            print("frsT: ", first(r))
             recurs (next(r))
         }
     }
@@ -10,6 +10,5 @@ function main()
         read_all(reader(s))
     }
 
-/*    read("(def fac [] (+ n 1))") */
-    read("")
+    read(slurp("./examples/sexpr.clj"))
 }

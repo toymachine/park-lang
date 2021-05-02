@@ -52,21 +52,22 @@ namespace park {
         gc::ref<Value> head_;
 
         lexertl::cmatch match_;
-//        size_t line_ = 1;
 
-        enum Token { LPAREN = 1, RPAREN, LBRACK, RBRACK, INTEGER, SYMBOL };
+        enum Token { EOI = 0, LPAREN, RPAREN, LBRACK, RBRACK, INTEGER, SYMBOL, STRING };
 
 
     public:
         explicit ReaderImpl(gc::ref<String> input, gc::ref<Value> head, const lexertl::cmatch &match)
-                : input_(input), head_(head), match_(match) { //input_->begin(), input_->end()) 
-            assert(head_);
+                : input_(input), head_(head), match_(match) {
             assert(input_);
         }
 
+
         void walk(const std::function<void(const gc::ref<gc::collectable> &ref)> &accept) override {
             accept(input_);
-            accept(head_);
+            if(head_) {
+                accept(head_);
+            }
         }  
 
         static void init(Runtime &runtime) {
@@ -103,8 +104,7 @@ namespace park {
             rules.push("[a-zA-Z_\\+\\-\\*][a-zA-Z0-9_-]*", SYMBOL); //symbol
 
             // string literals
-            //rules.push("'.*?'", 5);
-            //rules.push("\\\".*?\\\"", 5);
+            rules.push("\\\".*?\\\"", STRING);
 
             /* c single line comment */
             //rules.push("\"//\".*", 4);
@@ -140,7 +140,7 @@ namespace park {
                 result<Value>([&]() {
                     lexertl::cmatch match(input->begin(), input->end());
                     next_token(match);
-                    auto head = read_expr(fbr, match);
+                    auto head = match.id != EOI ? read_list(fbr, match) : nullptr;
                     return gc::make_ref<ReaderImpl>(fbr.allocator(), input, head, match);
                 });
         }
@@ -148,7 +148,7 @@ namespace park {
         static void next_token(lexertl::cmatch &match) {
             lexertl::lookup(sm, match);
 
-            while (match.id != 0) {
+            while (match.id != EOI) {
                 if (match.id == 666) {
                 } else if (match.id == 667) {
 //                    line_ += 1;
@@ -219,6 +219,39 @@ namespace park {
             return value;
         }
 
+        static gc::ref<Value> read_string(Fiber &fbr, lexertl::cmatch &match)
+        {
+            std::vector<char> buff; //TODO stack based vector if match small enough?
+            bool escape = false;
+            for(auto cur = match.first + 1; cur < match.second - 1; cur++) {
+                if(escape) {
+                    if(*cur == '\\') {
+                        buff.push_back('\\'); 
+                    }
+                    else if(*cur == 'n') {
+                        buff.push_back('\n'); 
+                    }
+                    else if(*cur == 'r') {
+                        buff.push_back('\r'); 
+                    }
+                    escape = false;
+                }
+                else {
+                    if(*cur == '\\') {
+                        escape = true;
+                    }
+                    else {
+                        buff.push_back(*cur);
+                    }
+                }
+            }
+            assert(!escape);
+            //TODO create directly from buff to prevent copying
+            auto value = String::create(fbr, std::string(buff.data(), buff.size()));
+            accept_token(match, STRING);
+            return value;
+        }
+
         static gc::ref<Value> read_expr(Fiber &fbr, lexertl::cmatch &match)
         {
             switch(match.id) {
@@ -233,6 +266,12 @@ namespace park {
                 }
                 case SYMBOL: {
                     return read_symbol(fbr, match);
+                }
+                case STRING: {
+                    return read_string(fbr, match);
+                }
+                case EOI: {
+                    throw std::runtime_error("end of input while reading expression");
                 }
                 default: {
                     throw std::runtime_error("TODO unmatched reader case");
@@ -254,80 +293,13 @@ namespace park {
                 result<Value>([&]() {
 
                     //return self->read_expr(fbr);
-                    if(!self->to_bool(fbr)) {
-                        throw std::runtime_error("no head, reader is empty");
+                    if(!self->head_) {
+                        throw std::runtime_error("reader is empty");
                     }
 
                     return self->head_;
 
-                    /*
-                    auto m = Map::create(fbr)->
-                            assoc(fbr, String::create(fbr, "line"), Integer::create(fbr, self->line_));
 
-                    if (self->results_.id == 0) { //eoi
-                        return m->
-                                assoc(fbr, String::create(fbr, "token"), String::create(fbr, "eoi"));
-                    } else if (self->results_.id == 2) { //identifier
-                        return m->
-                                assoc(fbr, String::create(fbr, "token"),
-                                    String::create(fbr, "identifier"))->
-                                assoc(fbr, String::create(fbr, "value"),
-                                    String::create(fbr, self->results_.str()));
-                    } else if(self->results_.id == 6) { //keyword literal
-                        return m->
-                                assoc(fbr, String::create(fbr, "token"),
-                                    String::create(fbr, "keyword"))->
-                                assoc(fbr, String::create(fbr, "value"),
-                                    String::create(fbr, self->results_.str()));
-                    } else if (self->results_.id == 3) { //integer literal
-                        return m->
-                                assoc(fbr, String::create(fbr, "token"),
-                                    String::create(fbr, "integer_literal"))->
-                                assoc(fbr, String::create(fbr, "value"),
-                                    String::create(fbr, self->results_.str()));
-                    } else if (self->results_.id == 5) { //string literal
-                        std::vector<char> buff;
-                        bool escape = false;
-                        for(auto cur = self->results_.first + 1; cur < self->results_.second - 1; cur++) {
-                            if(escape) {
-                                if(*cur == '\\') {
-                                   buff.push_back('\\'); 
-                                }
-                                else if(*cur == 'n') {
-                                   buff.push_back('\n'); 
-                                }
-                                else if(*cur == 'r') {
-                                   buff.push_back('\r'); 
-                                }
-                                escape = false;
-                            }
-                            else {
-                                if(*cur == '\\') {
-                                    escape = true;
-                                }
-                                else {
-                                    buff.push_back(*cur);
-                                }
-                            }
-                        }
-                        assert(!escape);
-                        return m->
-                                assoc(fbr, String::create(fbr, "token"),
-                                    String::create(fbr, "string_literal"))->
-                                assoc(fbr, String::create(fbr, "value"), String::create(fbr, std::string(buff.data(), buff.size())));
-                    } else {
-                        auto found = translate.find(self->results_.str());
-                        if (found != translate.end()) {
-                            return m->assoc(fbr, String::create(fbr, "token"),
-                                        String::create(fbr, found->second));
-                        } else {
-                            return m->assoc(fbr, String::create(fbr, "token"),
-                                        String::create(fbr, self->results_.str()));
-                        }
-                    }
-                    
-                    return m;
-                    */
                 });
         }
                    
@@ -342,8 +314,8 @@ namespace park {
                 argument<ReaderImpl>(1, self).
                 result<Value>([&]() {
                     auto match = self->match_; //copy
-                    next_token(match);
-                    auto head = read_expr(fbr, match);
+                    //next_token(match);
+                    auto head = match.id != EOI ? read_list(fbr, match) : nullptr;
                     return gc::make_ref<ReaderImpl>(fbr.allocator(), self->input_, head, match);
                 });
         }
