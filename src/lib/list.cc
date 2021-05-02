@@ -41,7 +41,12 @@ namespace park {
         explicit ListImpl(gc::ref<Value> item, gc::ref<List> tail) : item_(item), tail_(tail) {}
 
         void repr(Fiber &fbr, std::ostream &out) const override {
-            out << "<List>";
+            out << "<List ";
+            if(tail_) {
+                item_->repr(fbr, out);
+                tail_->repr(fbr, out);
+            }
+            out << ">";
         }
 
         bool to_bool(Fiber &fbr) const override {

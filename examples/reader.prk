@@ -1,0 +1,15 @@
+function main()
+{
+    let read_all = (r) => {
+        if(r) {
+            print(first(r))
+            recurs (next(r))
+        }
+    }
+    let read = (s) => {
+        read_all(reader(s))
+    }
+
+/*    read("(def fac [] (+ n 1))") */
+    read("")
+}

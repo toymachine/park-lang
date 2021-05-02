@@ -56,6 +56,8 @@
 #include "error2.h"
 #include "list.h"
 #include "mod_random.h"
+#include "reader.h"
+#include "symbol.h"
 
 #include <boost/filesystem.hpp>
 
@@ -79,6 +81,7 @@ namespace park {
     private:
 
         Interns interns_;
+        std::mutex interns_lock_;
 
         std::vector<worker_t> workers_;
 
@@ -161,6 +164,7 @@ namespace park {
         }
 
         size_t intern(const std::string &s) override;
+        std::string name(size_t namei) override;
 
         void run(const std::string &path) override;
         void run(Fiber &fbr, const AST::Apply &apply, MethodImpl code);
@@ -234,7 +238,9 @@ namespace park {
         Atom::init(*this);
         Struct::init(*this);
 //        Range::init(*this);
+        Symbol::init(*this);
         Lexer::init(*this);
+        Reader::init(*this);
         pack::init(*this);
         http::init(*this);
         AST::init(*this);
@@ -420,12 +426,18 @@ namespace park {
         }
     }
 
-    //requires lock
+    //has own lock, no longer needed to own global lock
     size_t
     RuntimeImpl::intern(const std::string &s) {
+        std::unique_lock<std::mutex> guard(interns_lock_);
         return interns_.intern(s);
     }
 
+    std::string 
+    RuntimeImpl::name(size_t namei) {
+        std::unique_lock<std::mutex> guard(interns_lock_);
+        return interns_.right().at(namei);
+    }
 
 
     void

@@ -207,7 +207,6 @@ namespace park {
             explicit Impl(Runtime &runtime) : runtime(runtime) {}
 
             size_t intern(const std::string &s) {
-                std::lock_guard guard(runtime.lock);
                 return runtime.intern(s);
             }
 

@@ -17,46 +17,22 @@
  * along with Park. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INTERN 
-#define __INTERN
+#ifndef __SYMBOL_H
+#define __SYMBOL_H
 
-#include <numeric>
-#include <random>
+#include <memory>
 
-#include <boost/bimap.hpp>
+#include "value.h"
 
-class Interns
-{
-public:
-    using bimap_t = boost::bimap<std::string,size_t>;
+namespace park {
 
+    class Symbol : public Value {
+    public:
+        static void init(Runtime &runtime);
 
-private:
-    bimap_t interned_;
+        static gc::ref<Symbol> create(Fiber &fbr, const std::string &from_str);
+    };
 
-    size_t next_id_ {0};
-
-public:
-    bimap_t::left_map &left() {
-        return interned_.left;
-    }
-
-    bimap_t::right_map &right() {
-        return interned_.right;
-    }
-
-    size_t intern(const std::string &s) {
-
-        auto found = interned_.left.find(s);
-        if (found != interned_.left.end()) {
-            return found->second;
-        } else {
-            auto new_id = ++next_id_;
-            interned_.left.insert({s, new_id});
-            return new_id;
-        }
-    }
-};
-
+}
 
 #endif

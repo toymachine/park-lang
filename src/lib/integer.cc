@@ -311,4 +311,8 @@ gc::ref<Integer> Integer::create(Fiber &fbr, int64_t i) {
 	return gc::make_ref<IntegerImpl>(fbr.allocator(), i);
 }
 
+gc::ref<Integer> Integer::create(Fiber &fbr, const std::string &from_str) {
+	return gc::make_ref<IntegerImpl>(fbr.allocator(), std::stoll(from_str)); //TODO range of stoll?
+}
+
 }

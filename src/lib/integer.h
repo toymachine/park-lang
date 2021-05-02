@@ -27,6 +27,7 @@ namespace park {
     class Integer : public Value {
     public:
     	static gc::ref<Integer> create(Fiber &fbr, int64_t i);
+        static gc::ref<Integer> create(Fiber &fbr, const std::string &from_str);
 
         static void init(Runtime &runtime);
 

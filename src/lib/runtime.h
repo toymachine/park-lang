@@ -74,8 +74,8 @@ namespace park {
         virtual void stop() = 0;
         virtual void quit() = 0;
 
-        //hold runtime lock
         virtual size_t intern(const std::string &s) = 0;
+        virtual std::string name(size_t namei) = 0;
 
         virtual gc::ref<Type> create_type(std::string name) = 0;
 
